@@ -22,10 +22,21 @@ async function run(){
         app.get('/users', async(req,res)=>{
 
             let query = { };
-            const email = req.query?.email;
+            const email = req?.query?.email;
+            const role = req?.query?.role;
+
+            // get user based on email
             if(email){
-                query = {email : email}
+                query = {email : email};
             }
+            // get users based on roles : admin/seller/buyer
+            if(role && role==='admin'){
+                return res.status(403).send({message : 'forbidden access'})
+            }
+            if(role && role!=='admin'){
+                query = {role : role};
+            }
+
             const result = await usersCollection.find(query).toArray();
             res.send(result);
         })
