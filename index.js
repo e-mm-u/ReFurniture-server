@@ -20,12 +20,26 @@ async function run(){
         const usersCollection = client.db('recycle-furniture').collection('users');
 
         app.get('/users', async(req,res)=>{
-            const query = { };
+
+            let query = { };
+            const email = req.query?.email;
+            if(email){
+                query = {email : email}
+            }
             const result = await usersCollection.find(query).toArray();
             res.send(result);
         })
         app.post('/users', async(req,res)=>{
+
             const user = req.body;
+            const query = {email : user.email}
+
+            const alreadyExist = await usersCollection.find(query).toArray();
+            if(alreadyExist.length>0){
+                console.log(alreadyExist);
+                return res.send({message : 'already saved user'})
+            }
+
             const result = await usersCollection.insertOne(user);
             res.send(result);
         })
