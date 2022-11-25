@@ -78,7 +78,30 @@ async function run(){
         // ___________________ PRODUCTS C R U D ______________________
 
         app.get('/products', async(req,res)=>{
+            const category = req.query?.category || null;
+            const seller = req.query?.seller || null ;
+            const buyer = req.query?.buyer || null;
+            const reported = req.query?.reported || null;
+            const advertise = req.query?.advertise || null;
+            
             let query = {};
+
+            if(category){
+                query = { category : category }
+            }
+            if(seller){
+                query = { "seller.email" : seller }
+            }
+            if(buyer){
+                query = { "buyer.email" : buyer }
+            }
+            if(reported){
+                query = { reported : reported }
+            }
+            if(advertise){
+                query = { advertise : advertise }
+            }
+
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         })
