@@ -18,7 +18,17 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run(){
     try{
         const usersCollection = client.db('recycle-furniture').collection('users');
-
+        const productsCollection = client.db('recycle-furniture').collection('products');
+        
+        // _______________________________________________________
+        // ___________________ USERS C R U D ______________________
+        
+        app.get('/users/:id', async(req,res)=>{
+            const id = req.params.id;
+            const query = { _id : ObjectId(id)};
+            const result = await usersCollection.findOne(query);
+            res.send(result);
+        })
         app.get('/users', async(req,res)=>{
 
             let query = { };
@@ -61,6 +71,22 @@ async function run(){
             if (result.deletedCount === 1) {
                 console.log('deleted')
             }
+            res.send(result);
+        })
+
+        // _______________________________________________________
+        // ___________________ PRODUCTS C R U D ______________________
+
+        app.get('/products', async(req,res)=>{
+            let query = {};
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+        app.post('/products', async(req,res)=>{
+            const product = req.body;
+            // console.log(product)
+            const result = await productsCollection.insertOne(product);
+            console.log(result);
             res.send(result);
         })
 
