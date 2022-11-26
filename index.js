@@ -48,6 +48,7 @@ async function run(){
             }
 
             const result = await usersCollection.find(query).toArray();
+            // console.log({email},{result});
             res.send(result);
         })
         app.post('/users', async(req,res)=>{
@@ -64,6 +65,36 @@ async function run(){
             const result = await usersCollection.insertOne(user);
             res.send(result);
         })
+
+        app.put('/users', async(req,res)=>{
+            const email = req.query.email ;
+            const filter = { email : email};
+            const updateInfo = req.body ;
+
+            let updateArray = null;
+
+            if(updateInfo.booking){
+                updateArray = {
+                    $push : {
+                        booking : updateInfo.product_id
+                    }
+                }
+            }
+            if(updateInfo.wishlist){
+                updateArray = {
+                    $push : {
+                        wishlist : updateInfo.product_id
+                    }
+                }
+            }
+
+            const result = await usersCollection.updateOne(filter, updateArray)
+
+            console.log(result);
+            res.send(result);
+           
+        })
+
         app.delete('/users/:id', async(req,res)=>{
             const id = req.params.id;
             const query = { _id : ObjectId(id) };
@@ -74,37 +105,95 @@ async function run(){
             res.send(result);
         })
 
-        // _______________________________________________________
-        // ___________________ PRODUCTS C R U D ______________________
+        // _________________________________________________________________
+        // ___________________ P R O D U C T S C R U D ______________________\
+
+
+        // _________________________________________________________________________________________
+        // \___________________ A P I : G E T   P R O D U C T S  by  C A T E G O R Y ______________|
+
 
         app.get('/products', async(req,res)=>{
-            const category = req.query?.category || null;
-            const seller = req.query?.seller || null ;
-            const buyer = req.query?.buyer || null;
-            const reported = req.query?.reported || null;
-            const advertise = req.query?.advertise || null;
-            
-            let query = {};
-
-            if(category){
-                query = { category : category }
-            }
-            if(seller){
-                query = { "seller.email" : seller }
-            }
-            if(buyer){
-                query = { "buyer.email" : buyer }
-            }
-            if(reported){
-                query = { reported : reported }
-            }
-            if(advertise){
-                query = { advertise : advertise }
-            }
-
+            const category = req.query.category ;
+            const query = {category : category};
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         })
+
+        // _________________________________________________________________________________________
+        // \___________________ A P I : G E T   Buyers for a Seller   P R O D U C T S______________|
+
+
+        // _________________________________________________________________________________________
+        // \___________________ A P I : G E T   S E L L E R ' S   P R O D U C T S__________________|
+
+        app.get('/products/postedby', async(req,res)=>{
+            const email = req.query.email ;
+            const query = { "seller.email" : email }
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // _________________________________________________________________________________________
+        // \___________________ A P I : G E T   P U R C H A S E D   P R O D U C T S________________|
+
+        app.get('/products/purchasedby', async(req,res)=>{
+            const email = req.query.email ;
+            const query = { "buyer.email" : email }
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+        // _____________________________________________________________________________________________
+        // \___________________A P I : G E T   B O O K E D   P R O D U C T S___________________________|
+
+        app.get('/products/booking', async(req,res)=>{
+            const email = req.query.email;
+            const user = await usersCollection.findOne({email : email});
+            const userBooking = user.booking;
+
+            userBooking.forEach((element,i) => {
+                userBooking[i] = ObjectId(element);
+            });
+
+            const products = await productsCollection.find({_id : { $in : userBooking}}).toArray();
+            res.send(products);
+        })
+        // _____________________________________________________________________________________________
+        // \___________________A P I : G E T   W I S H L I S T   P R O D U C T S_______________________|
+
+        app.get('/products/wishlist', async(req,res)=>{
+            const email = req.query.email;
+            const user = await usersCollection.findOne({email : email});
+            const userWishlist = user.wishlist;
+
+            userWishlist.forEach((element,i) => {
+                userWishlist[i] = ObjectId(element);
+            });
+
+            const products = await productsCollection.find({_id : { $in : userWishlist}}).toArray();
+            res.send(products);
+        })
+
+        // _____________________________________________________________________________________________
+        // \___________________ A P I : G E T   A D V E R T I S E D   P R O D U C T S__________________|
+
+        app.get('/products/advertise', async(req,res)=>{
+            const query = { advertise : true };
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+        // _____________________________________________________________________________________________
+        // \___________________ A P I : G E T   R E P O R T E D   P R O D U C T S______________________|
+
+        app.get('/products/reported', async(req,res)=>{
+            const query = { reported : true };
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // _____________________________________________________________________________________________
+        // \___________________ A P I : S E L L E R    P O S T   P R O D U C T S_______________________|
+
         app.post('/products', async(req,res)=>{
             const product = req.body;
             // console.log(product)
