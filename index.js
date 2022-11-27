@@ -97,6 +97,31 @@ async function run(){
             res.status(403).send({access_token : null});
         })
 
+
+        // ___________________________________________________________________
+        // ________________ is admin ? useAdmin hook   _____-_______________/
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await usersCollection.findOne(query);
+            res.send({ isAdmin : user?.role === 'admin' });
+        })
+        // ___________________________________________________________________
+        // ________________ is seller ? useSeller hook ________________________/
+        app.get('/users/seller/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await usersCollection.findOne(query);
+            res.send({ isSeller : user?.role === 'seller' });
+        })
+        // ___________________________________________________________________
+        // ________________ is buyer ? useBuyer hook  ______________________/
+        app.get('/users/buyer/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await usersCollection.findOne(query);
+            res.send({ isBuyer: user?.role === 'buyer' });
+        })
         // ________________________________________________________
         // ___________________ USERS C R U D ______________________\
         
@@ -126,6 +151,16 @@ async function run(){
 
             const result = await usersCollection.find(query).toArray();
             // console.log({email},{result});
+            res.send(result);
+        })
+
+        // ___________________________________________________________________
+        // ________________ A D M I N  : G E T  S E L L E R S _______________/
+
+        app.get('admin/users/sellers', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok you are admin i know now');
+            const query = { role : 'seller' };
+            const result = await usersCollection.find(query).toArray();
             res.send(result);
         })
         app.post('/users', async(req,res)=>{
