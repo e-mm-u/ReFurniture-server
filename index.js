@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.STRIPE_SK)
 require('dotenv').config();
 
 const app = express();
@@ -121,6 +122,17 @@ async function run(){
         })
 
         // _________________________________________________________________________________________
+        // \___________________ A P I : G E T   P R O D U C T S  by  I D  __________ ______________|
+
+
+        app.get('/products/:id', async(req,res)=>{
+            const id = req.params.id ;
+            const query = { _id : ObjectId(id) };
+            const result = await productsCollection.findOne(query);
+            res.send(result);
+        })
+
+        // _________________________________________________________________________________________
         // \___________________ A P I : G E T   Buyers for a Seller   P R O D U C T S______________|
 
 
@@ -201,6 +213,45 @@ async function run(){
             console.log(result);
             res.send(result);
         })
+
+        // _________________________________________________________________
+        // ___________________ P A Y M E N T _______________________________\
+        app.post('/create-payment-intent', async(req,res)=>{
+            const product = req.body;
+            const price = product.price;
+            const amount = price*100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency : 'usd',
+                amount : amount ,
+                "payment_method_types" : [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret : paymentIntent.client_secret
+            })
+        })
+
+        app.put('/products/payment/:id', async(req,res)=>{
+            const id = req.params.id;
+            const buyer = req.body ;
+            const query = { _id : ObjectId(id)};
+
+            const update = {
+                $set : {
+                    buyer : buyer,
+                    paid : true
+                }
+            }
+            const options = { upsert : true }
+            
+            const result = await productsCollection.updateOne(query, update, options);
+            
+            console.log(result);
+            res.send(result);
+        })
+
 
     }finally{
 
