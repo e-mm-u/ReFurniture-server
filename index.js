@@ -244,7 +244,8 @@ async function run(){
         }) 
                 
         
-        
+        // ______________________________________________________________________________
+        // _______________ S A V E  U S E R  I N  D A T A B A S E  _____________________/   
         app.post('/users', async(req,res)=>{
 
             const user = req.body;
@@ -260,6 +261,8 @@ async function run(){
             res.send(result);
         })
 
+        // __________________________________________________________________________
+        // _______________ U P D A T E   BOOKING &  WISHLIST  _____________________/ 
         app.put('/users', async(req,res)=>{
             const email = req.query.email ;
             const filter = { email : email};
@@ -289,23 +292,29 @@ async function run(){
            
         })
 
-        app.delete('/users/:id', async(req,res)=>{
-            const id = req.params.id;
-            const query = { _id : ObjectId(id) };
-            const result = await usersCollection.deleteOne(query);
-            if (result.deletedCount === 1) {
-                console.log('deleted')
+        // _________________________________________________________________
+        // _________________ P R O D U C T S  C R U D ______________________\
+        // __________________________________________________________________________
+        // _______________ U P D A T E   R E P O R T E D PRODUCT   _____________________/ 
+        app.put('/products/:id', async(req,res)=>{
+            const id = req.params.id ;
+            const filter = { _id : ObjectId(id) };
+            const updateInfo = req.body ;
+            const update = {
+                $set : {
+                    reported : true
+                }
             }
+
+            const result = await productsCollection.updateOne(filter, update)
+
+            console.log(result);
             res.send(result);
         })
 
-        // _________________________________________________________________
-        // ___________________ P R O D U C T S C R U D ______________________\
-
         // _________________________________________________________________________________________
         // \___________________ A P I : G E T   P R O D U C T S  by  C A T E G O R Y ______________|
-
-
+        
         app.get('/products', async(req,res)=>{
             let query = { }
             const category = req.query?.category ;
@@ -314,28 +323,9 @@ async function run(){
             res.send(result);
         })
 
-        // // _________________________________________________________________________________________
-        // // \___________________ A P I : G E T   P R O D U C T S  by  I D  __________ ______________|
-        // app.get('/products/:id', async(req,res)=>{
-        //     const id = req.params.id;
-        //     const query = { _id : ObjectId(id) } ;
-        //     const result = await productsCollection.findOne(query) ;
-        //     res.send(result)
-        // })
-
-        // _________________________________________________________________________________________
-        // \___________________ A P I : G E T   Buyers for a Seller   P R O D U C T S______________|
-
-
-        // _________________________________________________________________________________________
-        // \___________________ A P I : G E T   S E L L E R ' S   P R O D U C T S__________________|
-        app.get('/products/postedby', async(req,res)=>{
-            res.send('asdf')
-        })
-
         // _________________________________________________________________________________________
         // \___________________ A P I : G E T   P U R C H A S E D   P R O D U C T S________________|
-
+        //  need  modification
         app.get('/products/purchasedby', async(req,res)=>{
             const email = req.query.email ;
             const query = { "buyer.email" : email }
@@ -343,9 +333,10 @@ async function run(){
             res.send(result);
         })
         // _____________________________________________________________________________________________
-        // \___________________A P I : G E T   B O O K E D   P R O D U C T S___________________________|
+        // \___________________ B U Y E R's  B O O K E D   P R O D U C T S  ___________________________|
 
-        app.get('/products/booking', async(req,res)=>{
+        app.get('/buyer/products/booking', verifyJWT, verifyBuyer, async(req,res)=>{
+            console.log('as you are buyer I will return you the list');
             const email = req.query.email;
             const user = await usersCollection.findOne({email : email});
             const userBooking = user?.booking;
@@ -357,10 +348,11 @@ async function run(){
             const products = await productsCollection.find({_id : { $in : userBooking}}).toArray();
             res.send(products);
         })
-        // _____________________________________________________________________________________________
-        // \___________________A P I : G E T   W I S H L I S T   P R O D U C T S_______________________|
+        // ___________________________________________________________________________________________
+        // \___________________ B U Y E R's  W I S H L I S T   P R O D U C T S_______________________|
 
-        app.get('/products/wishlist', async(req,res)=>{
+        app.get('/buyer/products/wishlist', verifyJWT, verifyBuyer, async(req,res)=>{
+            console.log('as you are buyer I will return you the wishlist');
             const email = req.query.email;
             const user = await usersCollection.findOne({email : email});
             const userWishlist = user.wishlist;
@@ -381,25 +373,64 @@ async function run(){
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         })
-        // _____________________________________________________________________________________________
-        // \___________________ A P I : G E T   R E P O R T E D   P R O D U C T S______________________|
 
-        app.get('/products/reported', async(req,res)=>{
-            const query = { reported : true };
+        // ____________________________________________________________________________________
+        // \___________________  S E L L E R    G E T   P R O D U C T S_______________________|
+        app.get('/seller/products', verifyJWT, verifySeller, async(req,res)=>{
+            console.log('so you are seller and you can see your added products');
+            const email = req.query?.email;
+            const query = { "seller.email" : email };
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         })
+        // ______________________________________________________________________________________
+        // \___________________  S E L L E R    P O S T   P R O D U C T S_______________________|
 
-        // _____________________________________________________________________________________________
-        // \___________________ A P I : S E L L E R    P O S T   P R O D U C T S_______________________|
-
-        app.post('/products', async(req,res)=>{
+        app.post('/seller/products', verifyJWT, verifySeller, async(req,res)=>{
+            console.log('so you are a seller and you can add product here');
             const product = req.body;
             // console.log(product)
             const result = await productsCollection.insertOne(product);
             console.log(result);
             res.send(result);
-        })
+        });
+        // ______________________________________________________________________________________
+        // \___________________  S E L L E R    A D V E R T I S E  P R O D U C T S______________|
+
+        app.put('/seller/products/:id', verifyJWT, verifySeller, async(req,res)=>{
+            console.log('so you are a seller and you can advertise product here');
+            const id = req.params.id;
+            const filter = { _id : ObjectId(id) };
+            const options = { upsert: true };
+
+            const update = {
+                $set: {
+                    advertise : true
+                }
+            }
+            const result = await productsCollection.updateOne(filter, update, options);
+            if (result.modifiedCount > 0) {
+                console.log('advertised')
+            }
+            console.log(result);
+            res.send(result);
+        }); 
+        // ______________________________________________________________________________________
+        // \___________________  S E L L E R    D E L E T E   P R O D U C T S___________________|
+
+        app.delete('/seller/products/:id', verifyJWT, verifySeller, async(req,res)=>{
+            console.log('so you are a seller and you can delete product here');
+            const id = req.params.id;
+            const query = { _id : ObjectId(id) }
+            const result = await productsCollection.deleteOne(query);
+            console.log(result);
+            res.send(result);
+        });     
+
+        // _________________________________________________________________________________________
+        // \___________________ A P I : G E T   Buyers of a Seller   P R O D U C T S______________|
+        //     not implemented yet
+
 
         // _________________________________________________________________
         // ___________________ P A Y M E N T _______________________________\
