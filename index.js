@@ -181,7 +181,7 @@ async function run(){
         app.get('/admin/products/reported', verifyJWT, verifyAdmin, async(req,res)=>{
             console.log('ok you are admin i know now');
             const query = { reported : true };
-            const result = await usersCollection.find(query).toArray();
+            const result = await productsCollection.find(query).toArray();
             res.send(result);
         })     
 
