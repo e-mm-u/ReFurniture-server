@@ -21,6 +21,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
         // __________________ J W T - V E R I F Y  T O K E N ________________/
 
 function verifyJWT(req,res,next){
+    console.log(req.headers.authorization);
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         return res.status(401).send({ message : 'unauthorized access'});
@@ -157,12 +158,93 @@ async function run(){
         // ___________________________________________________________________
         // ________________ A D M I N  : G E T  S E L L E R S _______________/
 
-        app.get('admin/users/sellers', verifyJWT, verifyAdmin, async(req,res)=>{
+        app.get('/admin/users/sellers', verifyJWT, verifyAdmin, async(req,res)=>{
             console.log('ok you are admin i know now');
             const query = { role : 'seller' };
             const result = await usersCollection.find(query).toArray();
             res.send(result);
         })
+
+        // ___________________________________________________________________
+        // ________________ A D M I N  : G E T  B U Y E R S _______________/
+
+        app.get('/admin/users/buyers', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok you are admin i know now');
+            const query = { role : 'buyer' };
+            const result = await usersCollection.find(query).toArray();
+            res.send(result);
+        })     
+
+        // ________________________________________________________________________
+        // _______ A D M I N  : G E T  R E P O R T E D  P R O D U C T S___________/
+
+        app.get('/admin/products/reported', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok you are admin i know now');
+            const query = { reported : true };
+            const result = await usersCollection.find(query).toArray();
+            res.send(result);
+        })     
+
+        // ______________________________________________________________________________
+        // _______ A D M I N  : D E L E T E  R E P O R T E D  P R O D U C T S___________/
+
+        app.delete('/admin/products/reported/:id', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok, you admin can delete reported product');
+            const id = req.params.id;
+            const query = { _id : ObjectId(id) };
+            const result = await productsCollection.deleteOne(query);
+            if (result.deletedCount === 1) {
+                console.log('deleted')
+            }
+            res.send(result);
+        })
+
+        // ______________________________________________________________________________
+        // _______________ A D M I N  : D E L E T E  B U Y E R S _______________________/   
+        app.delete('/admin/users/buyers/:id', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok, you admin can delete buyers');
+            const id = req.params.id;
+            const query = { _id : ObjectId(id) };
+            const result = await usersCollection.deleteOne(query);
+            if (result.deletedCount === 1) {
+                console.log('deleted')
+            }
+            res.send(result);
+        })
+        // ______________________________________________________________________________
+        // _______________ A D M I N  : D E L E T E  S E L L E R S _____________________/        
+        app.delete('/admin/users/sellers/:id', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok, you admin can delete sellers');
+            const id = req.params.id;
+            const query = { _id : ObjectId(id) };
+            const result = await usersCollection.deleteOne(query);
+            if (result.deletedCount === 1) {
+                console.log('deleted')
+            }
+            res.send(result);
+        }) ;
+        // ______________________________________________________________________________
+        // _______________ A D M I N  : V E R I F Y  S E L L E R S _____________________/        
+        app.put('/admin/users/sellers/:id', verifyJWT, verifyAdmin, async(req,res)=>{
+            console.log('ok, you admin can verify sellers');
+            const id = req.params.id;
+            const filter = { _id : ObjectId(id) };
+            const options = { upsert: true };
+
+            const update = {
+                $set: {
+                    verified : true
+                }
+            }
+            const result = await usersCollection.updateOne(filter, update, options);
+            if (result.modifiedCount > 0) {
+                console.log('verified')
+            }
+            res.send(result);
+        }) 
+                
+        
+        
         app.post('/users', async(req,res)=>{
 
             const user = req.body;
